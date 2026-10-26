@@ -1,0 +1,228 @@
+# Integrated Marketing Calendar - build specification
+# Source of truth for the Excel workbook. The generator (build_workbook.py) reads this file.
+# Status: DRAFT v0.1 - items marked OPEN need a decision from Jordan/Dani.
+
+project:
+  name: Integrated Marketing Calendar
+  version: 0.1.0
+  purpose: >
+    One Excel workbook that shows the whole marketing motion - launches, thought
+    leadership, PR, campaigns, events and client activation - in a single view,
+    organised by practice and by the three motions.
+  deliverable: marketing_calendar.xlsx
+  hard_constraints:
+    - Excel (.xlsx) only; approved distribution format (PowerPoint is the only alternative)
+    - No macros (.xlsx not .xlsm) so it passes IT/approval and opens everywhere
+    - Manual data entry only; no calendar, CRM or API links
+    - Interactive inside Excel (dropdowns, selectors, live-updating views)
+  reference_image: screenshot "The Integrated View" (priority x month grid)
+
+principles:           # the 3 footer ideas on the reference slide
+  - id: connect
+    label: CONNECT
+    text: See where one market moment or activity can support multiple priorities.
+  - id: compound
+    label: COMPOUND
+    text: Build on existing momentum rather than creating isolated activity from scratch.
+  - id: coordinate
+    label: COORDINATE
+    text: Identify collisions, gaps and opportunities for better sequencing across the portfolio.
+
+settings:
+  planning_year: 2027          # OPEN: confirm year; single input cell drives every view
+  fiscal_year_start_month: 1   # OPEN: calendar year assumed (Jan-Dec); reference slide shows Jan-Jun
+  months_shown_on_annual: 12   # reference slide shows 6; build 12, allow hiding
+  multi_month_rule: span       # span = activity counts in every month between start and end
+                               # start = counts only in its start month   (OPEN: confirm)
+  collision_threshold: 3       # >= N activities for one practice in one month flags "crowded"
+
+motions:                       # the three categories; legend from reference slide
+  - id: reason_to_care
+    label: Create the reason to care
+    short: Reason to care
+    color: "#0B1F3A"           # dark navy
+    font_color: "#FFFFFF"
+    typical_activities: [POV / research, Market insight, Research / insight, POV]
+  - id: build_momentum
+    label: Build momentum
+    short: Momentum
+    color: "#0A7FC2"           # blue
+    font_color: "#FFFFFF"
+    typical_activities: [PR + campaign, Campaign, Launch, Industry event, Executive visibility]
+  - id: create_opportunity
+    label: Create opportunity
+    short: Opportunity
+    color: "#17B3A8"           # teal
+    font_color: "#FFFFFF"
+    typical_activities: [Client activation, Webinar series, Roundtable, Client outreach, Client event, Account activation, Follow-up, Ongoing commentary]
+
+practices:                     # reference slide uses placeholders; OPEN: replace with real practices
+  - { id: A, label: "Priority A", example: "Private Capital" }
+  - { id: B, label: "Priority B", example: "AITO" }
+  - { id: C, label: "Priority C", example: "GCC" }
+  - { id: D, label: "Priority D", example: "CMO" }
+
+max_practices: 12              # views sized for this many; unused rows hide cleanly
+
+activity_types:                # dropdown values; OPEN: confirm/extend
+  - Event
+  - Campaign
+  - PR
+  - Thought leadership
+  - Research / POV
+  - Launch
+  - Webinar
+  - Client activation
+  - Other
+
+statuses:
+  - { label: Idea,      color: "#D9D9D9" }
+  - { label: Planned,   color: "#BDD7EE" }
+  - { label: Confirmed, color: "#C6E0B4" }
+  - { label: Complete,  color: "#A9D18E" }
+  - { label: On hold,   color: "#FFE699" }
+  - { label: Cancelled, color: "#F4B183" }
+
+workbook:
+  sheets:
+    - name: Start Here
+      purpose: How to use, colour legend, the 3 principles, how to add/remove practices
+      protected: true
+
+    - name: Activity Planner
+      purpose: >
+        THE ONLY SHEET THAT NEEDS DATA ENTRY. One row per activity. Every other
+        sheet is formula-driven from this table.
+      object: Excel Table "tblActivities" (auto-extends, filter/sort, banded rows)
+      columns:
+        - { name: ID,            type: auto,      note: "ACT-001 style, formula" }
+        - { name: Activity,      type: text,      required: true }
+        - { name: Practice,      type: dropdown,  source: Lists!Practices, required: true }
+        - { name: Motion,        type: dropdown,  source: Lists!Motions, required: true }
+        - { name: Activity type, type: dropdown,  source: Lists!ActivityTypes }
+        - { name: Start date,    type: date,      required: true, validation: "valid date within planning year" }
+        - { name: End date,      type: date,      note: "blank = single day; validation end >= start" }
+        - { name: Status,        type: dropdown,  source: Lists!Statuses }
+        - { name: Owner,         type: text }
+        - { name: Audience / channel, type: text }
+        - { name: Notes,         type: text }
+        - { name: M01..M12,      type: calc,      note: "hidden helper cols: 1 if activity touches month n (per multi_month_rule)" }
+        - { name: Check,         type: calc,      note: "flags missing practice/motion/date or end<start" }
+      behaviours:
+        - Data validation on every dropdown and date column
+        - Row turns red-tinted when Check column flags a problem
+        - Motion cell is colour-coded using the motion palette
+        - Freeze header row; sample rows pre-loaded from the reference slide
+
+    - name: Annual View
+      purpose: Whole year at a glance - the reference slide, generalised
+      sections:
+        - name: Priority x month grid
+          layout: "rows = practices, columns = Jan..Dec; each cell lists that practice's activities for the month, coloured by motion"
+          note: "Matches the reference image. Cell shows activity names (TEXTJOIN) and takes the colour of the dominant motion."
+        - name: Counts by month
+          layout: "rows = Total / Events / Activities / by motion (3 rows); columns = Jan..Dec"
+          formulas: COUNTIFS on helper month columns
+        - name: Counts by practice x motion
+          layout: "rows = practices; columns = 3 motions + total (year totals)"
+        - name: Crowding / gap flags
+          layout: "heat-map of practice x month; red >= collision_threshold, grey = empty (gap)"
+          maps_to_principle: coordinate
+        - name: Legend and principles footer
+      interactions: [Year comes from Settings, Show/hide months, Filter by status via dropdown]
+
+    - name: Monthly View
+      purpose: Drill into one month
+      selector: "Month dropdown (cell B2); optional status filter"
+      sections:
+        - name: Month header KPIs
+          content: total activities, events, per-motion counts, per-practice counts
+        - name: Practice x motion matrix for the month
+        - name: Chronological activity list for the month
+          columns: [Date, Activity, Practice, Motion, Type, Status, Owner]
+          note: "Pulled with INDEX/SMALL (works without dynamic arrays); sorted by date"
+        - name: Week-by-week strip
+          layout: "weeks of the month across; activities placed by start date"
+
+    - name: Practice View
+      purpose: Everything for one practice, by motion, across the year
+      selector: "Practice dropdown (cell B2)"
+      sections:
+        - name: Practice header KPIs
+          content: total activities, events, per-motion counts, busiest month
+        - name: Three-lane timeline
+          layout: "3 rows (one per motion) x 12 months; activities listed in each cell; colour-coded"
+          maps_to_principle: connect and compound
+        - name: Activity list for the practice
+          columns: [Start, End, Activity, Motion, Type, Status, Owner]
+        - name: Month-by-month count bar (in-cell data bars)
+
+    - name: Lists
+      purpose: Dropdown sources and palette. Edit here to rename practices/types.
+      protected: false
+      named_ranges: [Practices, Motions, ActivityTypes, Statuses, Months]
+
+    - name: Settings
+      purpose: Planning year, multi-month rule, collision threshold
+      hidden: false
+
+formulas_and_compatibility:
+  target_excel: "Excel 2019 / Microsoft 365 (Windows, Mac, web)"   # OPEN: confirm what Dani's org runs
+  required_functions: [COUNTIFS, SUMIFS, SUMPRODUCT, INDEX, MATCH, SMALL, IFERROR, TEXT, TEXTJOIN, IFS]
+  avoided: [LET, LAMBDA, FILTER, SORT, XLOOKUP, dynamic spill ranges]  # keeps it working on older/locked-down Excel
+  fallback_if_no_textjoin: "cells show a count and a pointer to the Monthly View instead of names"
+
+quality:
+  recalc_check: "Open in LibreOffice headless, recalc, assert no #REF!/#NAME?/#VALUE!"
+  tests:
+    - Counts on Annual View equal row counts in the Activity Planner
+    - Every activity appears in exactly one practice row and its motion colour
+    - Month and Practice selectors return correct rows for the sample data
+    - Spanning activity (Jan-Mar) appears in Jan, Feb and Mar under span rule
+    - Blank rows, bad dates and missing practice are flagged, not silently dropped
+  print: "Each view fits landscape on 1 page (Annual) - slide-ready"
+
+sample_data:                   # from reference screenshot; to be replaced by real data
+  - { activity: "POV / research",       practice: A, motion: reason_to_care,     month: 1 }
+  - { activity: "PR + campaign",        practice: A, motion: build_momentum,     month: 2 }
+  - { activity: "Industry event",       practice: A, motion: build_momentum,     month: 3, type: Event }
+  - { activity: "Client activation",    practice: A, motion: create_opportunity, month: 4 }
+  - { activity: "Follow-up",            practice: A, motion: create_opportunity, month: 5 }
+  - { activity: "Market insight",       practice: B, motion: reason_to_care,     month: 2 }
+  - { activity: "Campaign",             practice: B, motion: build_momentum,     month: 3 }
+  - { activity: "Webinar series",       practice: B, motion: create_opportunity, month: 4, type: Webinar }
+  - { activity: "Roundtable",           practice: B, motion: create_opportunity, month: 5, type: Event }
+  - { activity: "Follow-up",            practice: B, motion: create_opportunity, month: 6 }
+  - { activity: "Research / insight",   practice: C, motion: reason_to_care,     month: 1 }
+  - { activity: "Launch",               practice: C, motion: build_momentum,     month: 3, type: Launch }
+  - { activity: "Industry event",       practice: C, motion: create_opportunity, month: 4, type: Event }
+  - { activity: "Client outreach",      practice: C, motion: create_opportunity, month: 5 }
+  - { activity: "Ongoing commentary",   practice: C, motion: create_opportunity, month: 6 }
+  - { activity: "POV",                  practice: D, motion: reason_to_care,     month: 2 }
+  - { activity: "Executive visibility", practice: D, motion: build_momentum,     month: 3 }
+  - { activity: "Client event",         practice: D, motion: create_opportunity, month: 5, type: Event }
+  - { activity: "Account activation",   practice: D, motion: create_opportunity, month: 6 }
+
+research:
+  summary: >
+    GitHub search (Oct 2026) found no ready-made integrated marketing calendar in Excel
+    with annual/monthly/practice views. Closest matches are Excel-generation libraries and
+    a Gantt generator, which we reuse as tooling/reference rather than as a base.
+  candidates:
+    - { repo: jmcnamara/XlsxWriter, stars: 3986, verdict: "SELECTED build engine - tables, data validation, conditional formats, formulas, named ranges, all in pure .xlsx" }
+    - { repo: trondegil/xlsx-gantt, stars: 3, verdict: "Reference only - Python/openpyxl Gantt generator with themes; not a 3-view planner. Could not read source from this session (repo not in scope) so licence/code unreviewed" }
+    - { repo: BiancaLeRoux/QuiverTask, stars: 0, verdict: "Rejected - Electron/web app syncing to Excel; violates Excel-only constraint" }
+    - { repo: botenvouwer/gantty, stars: 0, verdict: "Rejected - simple Gantt template, no views/counts" }
+  tooling_choice:
+    build: "Python 3 + XlsxWriter (generates the workbook from this YAML)"
+    verify: "openpyxl (inspect) + LibreOffice headless (recalculate, screenshot to PDF/PNG)"
+    rejected: ["VBA/macros (approval risk)", "Power Query/Power Pivot (not portable)", "web app (not allowed)", "Google Sheets (not allowed)"]
+
+open_questions:
+  - Real practice names, and how many (4 on slide)?
+  - Planning year and Jan-Dec vs fiscal year?
+  - Should a multi-month activity show in every month (span) or only its start month?
+  - Which Excel version does the approving org / recipients run (TEXTJOIN needs 2019+)?
+  - Do "events" need their own flag/count separate from other activity types? (assumed: Activity type = Event)
+  - Brand: use slide's navy/blue/teal palette and font, or Launch Collective / client branding?
+  - Who edits the file - one owner or several (affects sheet protection and versioning)?
