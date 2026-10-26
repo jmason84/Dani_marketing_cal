@@ -222,7 +222,7 @@ research:
 
 open_questions:
   - Which Excel version does the approving org / recipients run (TEXTJOIN needs 2019+)?
-  - Do "events" need their own flag/count separate from other activity types? (assumed: Activity type = Event)
+  - 'Do "events" need their own flag/count separate from other activity types? (assumed - Activity type = Event)'
 
 decisions:                     # answered by Jordan
   - Practices are not known up front; workbook must let users add (and rename/remove) practices themselves
