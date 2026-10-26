@@ -1,6 +1,6 @@
 # Integrated Marketing Calendar (Excel) - Implementation Plan
 
-Spec: `marketing_calendar_spec.yaml` (source of truth). Status: DRAFT v0.1.
+Spec: `marketing_calendar_spec.yaml` (source of truth). Status: DRAFT v0.2.
 
 ## What we're building
 One `.xlsx` (no macros) with a single data-entry sheet and three formula-driven views.
@@ -41,13 +41,16 @@ Decision: generate the workbook with Python + XlsxWriter from the YAML, so chang
 - Everything reads from the table `tblActivities`, so adding rows updates all views automatically.
 - Multi-month activities: "span" rule by default (counts in every month it touches).
 
-## Open questions (need answers before Phase 2)
-1. Real practice names / how many?
-2. Planning year; calendar vs fiscal year?
-3. Span vs start-month counting for multi-month activities?
-4. Excel version used by the approvers/recipients?
-5. Branding/palette: slide's navy-blue-teal or client branding?
-6. Single editor or several (protection/versioning)?
+## Decisions (from Jordan)
+- Practices unknown: users add/rename/remove them on the Lists sheet (Excel Table `tblPractices`); dropdowns and all views update automatically. Views are pre-built for 12 practices; blank slots hide.
+- Calendar year (Jan-Dec).
+- Multi-month activities count in every month they touch.
+- Slide palette (navy / blue / teal).
+- Several editors: host on SharePoint/OneDrive for co-authoring, lock view sheets (no password), validation + Check column, Change Log sheet.
+
+## Still open
+1. Excel version of recipients (assumed Microsoft 365; names-in-cells needs 2019+).
+2. Is 12 practices enough headroom?
 
 ## Risks
 - Per-cell activity names via TEXTJOIN can get long in crowded months -> cap with "+N more" and point to Monthly View.

@@ -1,10 +1,10 @@
 # Integrated Marketing Calendar - build specification
 # Source of truth for the Excel workbook. The generator (build_workbook.py) reads this file.
-# Status: DRAFT v0.1 - items marked OPEN need a decision from Jordan/Dani.
+# Status: DRAFT v0.2 - decisions from Jordan recorded below; remaining OPEN items need an answer.
 
 project:
   name: Integrated Marketing Calendar
-  version: 0.1.0
+  version: 0.2.0
   purpose: >
     One Excel workbook that shows the whole marketing motion - launches, thought
     leadership, PR, campaigns, events and client activation - in a single view,
@@ -29,11 +29,10 @@ principles:           # the 3 footer ideas on the reference slide
     text: Identify collisions, gaps and opportunities for better sequencing across the portfolio.
 
 settings:
-  planning_year: 2027          # OPEN: confirm year; single input cell drives every view
-  fiscal_year_start_month: 1   # OPEN: calendar year assumed (Jan-Dec); reference slide shows Jan-Jun
+  planning_year: 2027          # single input cell drives every view (placeholder; user can change)
+  fiscal_year_start_month: 1   # DECIDED: calendar year (Jan-Dec); reference slide shows Jan-Jun
   months_shown_on_annual: 12   # reference slide shows 6; build 12, allow hiding
-  multi_month_rule: span       # span = activity counts in every month between start and end
-                               # start = counts only in its start month   (OPEN: confirm)
+  multi_month_rule: span       # DECIDED: activity counts in every month it touches
   collision_threshold: 3       # >= N activities for one practice in one month flags "crowded"
 
 motions:                       # the three categories; legend from reference slide
@@ -56,13 +55,16 @@ motions:                       # the three categories; legend from reference sli
     font_color: "#FFFFFF"
     typical_activities: [Client activation, Webinar series, Roundtable, Client outreach, Client event, Account activation, Follow-up, Ongoing commentary]
 
-practices:                     # reference slide uses placeholders; OPEN: replace with real practices
+practices:                     # DECIDED: names/count unknown - users add their own on the Lists sheet.
+                               # These 4 are placeholder examples from the slide only.
   - { id: A, label: "Priority A", example: "Private Capital" }
   - { id: B, label: "Priority B", example: "AITO" }
   - { id: C, label: "Priority C", example: "GCC" }
   - { id: D, label: "Priority D", example: "CMO" }
 
-max_practices: 12              # views sized for this many; unused rows hide cleanly
+max_practices: 12              # views pre-built for 12; blank slots auto-hide. Practices live in Excel Table
+                               # tblPractices on Lists; add a row = new practice appears in dropdowns and all views.
+                               # OPEN: raise to 20 if more are ever needed
 
 activity_types:                # dropdown values; OPEN: confirm/extend
   - Event
@@ -167,7 +169,7 @@ workbook:
       hidden: false
 
 formulas_and_compatibility:
-  target_excel: "Excel 2019 / Microsoft 365 (Windows, Mac, web)"   # OPEN: confirm what Dani's org runs
+  target_excel: "Microsoft 365 / Excel 2019+ (Windows, Mac, web)"   # still OPEN: not answered; assumed 365 (needed for co-editing)
   required_functions: [COUNTIFS, SUMIFS, SUMPRODUCT, INDEX, MATCH, SMALL, IFERROR, TEXT, TEXTJOIN, IFS]
   avoided: [LET, LAMBDA, FILTER, SORT, XLOOKUP, dynamic spill ranges]  # keeps it working on older/locked-down Excel
   fallback_if_no_textjoin: "cells show a count and a pointer to the Monthly View instead of names"
@@ -219,10 +221,20 @@ research:
     rejected: ["VBA/macros (approval risk)", "Power Query/Power Pivot (not portable)", "web app (not allowed)", "Google Sheets (not allowed)"]
 
 open_questions:
-  - Real practice names, and how many (4 on slide)?
-  - Planning year and Jan-Dec vs fiscal year?
-  - Should a multi-month activity show in every month (span) or only its start month?
   - Which Excel version does the approving org / recipients run (TEXTJOIN needs 2019+)?
   - Do "events" need their own flag/count separate from other activity types? (assumed: Activity type = Event)
-  - Brand: use slide's navy/blue/teal palette and font, or Launch Collective / client branding?
-  - Who edits the file - one owner or several (affects sheet protection and versioning)?
+
+decisions:                     # answered by Jordan
+  - Practices are not known up front; workbook must let users add (and rename/remove) practices themselves
+  - Calendar year (Jan-Dec), not fiscal
+  - Multi-month activities count in every month they touch (span rule)
+  - Use the slide's colour palette (navy / blue / teal)
+  - Several people will edit the file
+
+multi_editor:
+  implications:
+    - Host on SharePoint/OneDrive so Excel co-authoring works (macro-free .xlsx supports it)
+    - Only Activity Planner and Lists are meant to be edited; view sheets are locked (no password) so formulas cannot be overwritten by accident
+    - Planner has Owner, Last updated (typed) and Status columns; Start Here has a short edit etiquette (one row per activity, never delete rows mid-year, use Status=Cancelled)
+    - Data validation stops bad dates and unknown practices; Check column flags problems for whoever sees it first
+    - Version history relies on SharePoint/OneDrive; also add a Change Log sheet (manual, date/person/what)
