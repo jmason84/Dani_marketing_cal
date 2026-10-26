@@ -30,7 +30,9 @@ MONTHS = [calendar.month_name[i] for i in range(1, 13)]
 FILTER_DEFAULT = "All (excl. Cancelled)"
 GREY, LIGHT, INK = "#595959", "#F2F2F2", "#1F1F1F"
 
-FIRST, LAST = 5, 1004          # planner data rows (1-based)
+import os
+FIRST = 5
+LAST = FIRST + int(os.environ.get("PLANNER_ROWS", 1000)) - 1   # planner data rows (1-based)
 NTYPE, NSTAT = 20, 10
 
 PL = "'Activity Planner'!"
